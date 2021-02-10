@@ -1,3 +1,3 @@
-# llvm11
+# llvm11.0
 
-Compatibility package for llvm 11
+llvm 11 compatibility package
