@@ -35,13 +35,8 @@
 %global pkg_libdir %{install_libdir}
 %endif
 
-%if 0%{?rhel}
-%global targets_to_build "X86;AMDGPU;PowerPC;NVPTX;SystemZ;AArch64;ARM;Mips;BPF"
-%global experimental_targets_to_build ""
-%else
 %global targets_to_build "all"
 %global experimental_targets_to_build "AVR"
-%endif
 
 %global build_install_prefix %{buildroot}%{install_prefix}
 
