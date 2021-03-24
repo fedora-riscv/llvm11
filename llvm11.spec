@@ -10,7 +10,7 @@
 
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
-%global rc_ver 2
+#global rc_ver 2
 %global baserelease 1
 %global llvm_srcdir llvm-%{version}%{?rc_ver:rc%{rc_ver}}.src
 %global maj_ver 11
@@ -59,6 +59,8 @@ Source4:	lit.fedora.cfg.py
 # Fix coreos-installer test crash on s390x (rhbz#1883457), https://reviews.llvm.org/D89034
 Patch1:		0001-SystemZ-Use-LA-instead-of-AGR-in-eliminateFrameIndex.patch
 Patch2:     0001-gcc11.patch
+Patch3:		0001-SystemZ-Assign-the-full-space-for-promoted-and-split.patch
+Patch4:		0001-MemCpyOpt-Correctly-merge-alias-scopes-during-call-s.patch
 
 BuildRequires:	gcc
 BuildRequires:	gcc-c++
@@ -420,7 +422,7 @@ rm test/tools/llvm-readobj/ELF/dependent-libraries.test
 rm test/tools/dsymutil/X86/swift-interface.test
 
 # FIXME: use %%cmake_build instead of %%__ninja
-LD_LIBRARY_PATH=%{buildroot}/%{_libdir}  %{__ninja} check-all -C %{_vpath_builddir}
+LD_LIBRARY_PATH=%{buildroot}/%{pkg_libdir}  %{__ninja} check-all -C %{_vpath_builddir}
 
 %ldconfig_scriptlets libs
 
@@ -543,5 +545,9 @@ fi
 %endif
 
 %changelog
+* Tue Mar 23 2021 Josh Stone <jistone@redhat.com> - 11.1.0-1
+- Update to 11.1.0 final
+- Add fixes for rustc codegen
+
 * Wed Feb 03 2021 Serge Guelton - 11.1.0-0.1.rc2
 - 11.1.0-rc2 release
