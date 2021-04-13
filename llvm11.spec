@@ -11,7 +11,7 @@
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
 #global rc_ver 2
-%global baserelease 1
+%global baserelease 2
 %global llvm_srcdir llvm-%{version}%{?rc_ver:rc%{rc_ver}}.src
 %global maj_ver 11
 %global min_ver 1
@@ -427,17 +427,13 @@ LD_LIBRARY_PATH=%{buildroot}/%{pkg_libdir}  %{__ninja} check-all -C %{_vpath_bui
 
 %ldconfig_scriptlets libs
 
-%if %{without compat_build}
-
 %post devel
-%{_sbindir}/update-alternatives --install %{_bindir}/llvm-config llvm-config %{_bindir}/llvm-config-%{__isa_bits} %{__isa_bits}
+%{_sbindir}/update-alternatives --install %{_bindir}/llvm-config%{exec_suffix} llvm-config%{exec_suffix} %{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits} %{__isa_bits}
 
 %postun devel
 if [ $1 -eq 0 ]; then
-  %{_sbindir}/update-alternatives --remove llvm-config %{_bindir}/llvm-config-%{__isa_bits}
+  %{_sbindir}/update-alternatives --remove llvm-config%{exec_suffix} %{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 fi
-
-%endif
 
 %files
 %license LICENSE.TXT
@@ -445,9 +441,10 @@ fi
 %{_mandir}/man1/*
 %{_bindir}/*
 
+%exclude %{_bindir}/llvm-config%{exec_suffix}
+%exclude %{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
+
 %if %{without compat_build}
-%exclude %{_bindir}/llvm-config
-%exclude %{_bindir}/llvm-config-%{__isa_bits}
 %exclude %{_bindir}/not
 %exclude %{_bindir}/count
 %exclude %{_bindir}/yaml-bench
@@ -483,18 +480,18 @@ fi
 
 %files devel
 %license LICENSE.TXT
-%if %{without compat_build}
-%ghost %{_bindir}/llvm-config
-%{_bindir}/llvm-config-%{__isa_bits}
+
+%ghost %{_bindir}/llvm-config%{exec_suffix}
+%{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 %{_mandir}/man1/llvm-config*
+
+%if %{without compat_build}
 %{_includedir}/llvm
 %{_includedir}/llvm-c
 %{_libdir}/libLLVM.so
 %{_libdir}/cmake/llvm
 %else
-%{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 %{pkg_bindir}/llvm-config
-%{_mandir}/man1/llvm-config%{exec_suffix}.1.gz
 %{install_includedir}/llvm
 %{install_includedir}/llvm-c
 %{pkg_includedir}/llvm
@@ -546,6 +543,9 @@ fi
 %endif
 
 %changelog
+* Tue Apr 13 2021 sguelton@redhat.com - 11.1.0-2
+- Fix llvm-config-11 handling, see rhbz#1937816
+
 * Tue Mar 23 2021 Josh Stone <jistone@redhat.com> - 11.1.0-1
 - Update to 11.1.0 final
 - Add fixes for rustc codegen
