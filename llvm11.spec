@@ -11,7 +11,7 @@
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
 #global rc_ver 2
-%global baserelease 2
+%global baserelease 3
 %global llvm_srcdir llvm-%{version}%{?rc_ver:rc%{rc_ver}}.src
 %global maj_ver 11
 %global min_ver 1
@@ -32,6 +32,7 @@
 %global pkg_name llvm
 %global install_prefix /usr
 %global install_libdir %{_libdir}
+%global pkg_bindir %{_bindir}
 %global pkg_libdir %{install_libdir}
 %endif
 
@@ -278,17 +279,17 @@ pathfix.py -i %{__python3} -pn \
 %install
 %cmake_install
 
-
-%if %{without compat_build}
 mkdir -p %{buildroot}/%{_bindir}
-mv %{buildroot}/%{_bindir}/llvm-config %{buildroot}/%{_bindir}/llvm-config-%{__isa_bits}
+mv %{buildroot}/%{pkg_bindir}/llvm-config %{buildroot}/%{pkg_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 
 # ghost presence
-touch %{buildroot}%{_bindir}/llvm-config
+touch %{buildroot}%{_bindir}/llvm-config%{exec_suffix}
+
+%if %{without compat_build}
 
 # Fix some man pages
-ln -s llvm-config.1 %{buildroot}%{_mandir}/man1/llvm-config-%{__isa_bits}.1
-mv %{buildroot}%{_mandir}/man1/tblgen.1 %{buildroot}%{_mandir}/man1/llvm-tblgen.1
+ln -s llvm-config.1 %{buildroot}%{_mandir}/man1/llvm-config%{exec_suffix}-%{__isa_bits}.1
+mv %{buildroot}%{_mandir}/man1/*tblgen.1 %{buildroot}%{_mandir}/man1/llvm-tblgen.1
 
 # Install binaries needed for lit tests
 %global test_binaries llvm-isel-fuzzer llvm-opt-fuzzer
@@ -391,7 +392,6 @@ ln -s ../../../%{install_includedir}/llvm %{buildroot}/%{pkg_includedir}/llvm
 ln -s ../../../%{install_includedir}/llvm-c %{buildroot}/%{pkg_includedir}/llvm-c
 
 # Fix multi-lib
-mv %{buildroot}%{_bindir}/llvm-config{%{exec_suffix},%{exec_suffix}-%{__isa_bits}}
 %multilib_fix_c_header --file %{install_includedir}/llvm/Config/llvm-config.h
 
 # Create ld.so.conf.d entry
@@ -428,11 +428,11 @@ LD_LIBRARY_PATH=%{buildroot}/%{pkg_libdir}  %{__ninja} check-all -C %{_vpath_bui
 %ldconfig_scriptlets libs
 
 %post devel
-%{_sbindir}/update-alternatives --install %{_bindir}/llvm-config%{exec_suffix} llvm-config%{exec_suffix} %{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits} %{__isa_bits}
+%{_sbindir}/update-alternatives --install %{_bindir}/llvm-config%{exec_suffix} llvm-config%{exec_suffix} %{pkg_bindir}/llvm-config%{exec_suffix}-%{__isa_bits} %{__isa_bits}
 
 %postun devel
 if [ $1 -eq 0 ]; then
-  %{_sbindir}/update-alternatives --remove llvm-config%{exec_suffix} %{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
+  %{_sbindir}/update-alternatives --remove llvm-config%{exec_suffix} %{pkg_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 fi
 
 %files
@@ -441,8 +441,7 @@ fi
 %{_mandir}/man1/*
 %{_bindir}/*
 
-%exclude %{_bindir}/llvm-config%{exec_suffix}
-%exclude %{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
+%exclude %{pkg_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 
 %if %{without compat_build}
 %exclude %{_bindir}/not
@@ -453,7 +452,6 @@ fi
 %exclude %{_bindir}/llvm-opt-fuzzer
 %{_datadir}/opt-viewer
 %else
-%exclude %{pkg_bindir}/llvm-config
 %{pkg_bindir}
 %endif
 
@@ -482,7 +480,7 @@ fi
 %license LICENSE.TXT
 
 %ghost %{_bindir}/llvm-config%{exec_suffix}
-%{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
+%{pkg_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 %{_mandir}/man1/llvm-config*
 
 %if %{without compat_build}
@@ -491,7 +489,6 @@ fi
 %{_libdir}/libLLVM.so
 %{_libdir}/cmake/llvm
 %else
-%{pkg_bindir}/llvm-config
 %{install_includedir}/llvm
 %{install_includedir}/llvm-c
 %{pkg_includedir}/llvm
@@ -543,6 +540,9 @@ fi
 %endif
 
 %changelog
+* Tue Apr 27 2021 sguelton@redhat.com - 11.1.0-3
+- Fix llvm-config11 install path
+
 * Tue Apr 13 2021 sguelton@redhat.com - 11.1.0-2
 - Fix llvm-config-11 handling, see rhbz#1937816
 
