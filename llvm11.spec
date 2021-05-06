@@ -11,7 +11,7 @@
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
 #global rc_ver 2
-%global baserelease 3
+%global baserelease 4
 %global llvm_srcdir llvm-%{version}%{?rc_ver:rc%{rc_ver}}.src
 %global maj_ver 11
 %global min_ver 1
@@ -34,6 +34,7 @@
 %global install_libdir %{_libdir}
 %global pkg_bindir %{_bindir}
 %global pkg_libdir %{install_libdir}
+%global exec_suffix %{nil}
 %endif
 
 %global targets_to_build "all"
@@ -145,6 +146,8 @@ Shared libraries for the LLVM compiler infrastructure.
 %package static
 Summary:	LLVM static libraries
 Conflicts:	%{name}-devel < 8
+
+Provides:	llvm-static(major) = %{maj_ver}
 
 %description static
 Static libraries for the LLVM compiler infrastructure.
@@ -441,6 +444,7 @@ fi
 %{_mandir}/man1/*
 %{_bindir}/*
 
+%exclude %{_bindir}/llvm-config%{exec_suffix}
 %exclude %{pkg_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 
 %if %{without compat_build}
@@ -540,6 +544,9 @@ fi
 %endif
 
 %changelog
+* Thu May 06 2021 sguelton@redhat.com - 11.1.0-4
+- Harmonize llvm-config handling with non-compat version
+
 * Tue Apr 27 2021 sguelton@redhat.com - 11.1.0-3
 - Fix llvm-config11 install path
 
