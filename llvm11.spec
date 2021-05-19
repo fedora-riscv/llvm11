@@ -11,7 +11,7 @@
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
 #global rc_ver 2
-%global baserelease 4
+%global baserelease 5
 %global llvm_srcdir llvm-%{version}%{?rc_ver:rc%{rc_ver}}.src
 %global maj_ver 11
 %global min_ver 1
@@ -283,10 +283,6 @@ pathfix.py -i %{__python3} -pn \
 %cmake_install
 
 mkdir -p %{buildroot}/%{_bindir}
-mv %{buildroot}/%{pkg_bindir}/llvm-config %{buildroot}/%{pkg_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
-
-# ghost presence
-touch %{buildroot}%{_bindir}/llvm-config%{exec_suffix}
 
 %if %{without compat_build}
 
@@ -383,7 +379,6 @@ ln -s %{_libdir}/LLVMgold.so %{buildroot}%{_libdir}/bfd-plugins/
 %else
 
 # Add version suffix to binaries
-mkdir -p %{buildroot}/%{_bindir}
 for f in %{buildroot}/%{install_bindir}/*; do
   filename=`basename $f`
   ln -s ../../../%{install_bindir}/$filename %{buildroot}/%{_bindir}/$filename%{exec_suffix}
@@ -414,6 +409,26 @@ done
 rm -Rf %{build_install_prefix}/share/opt-viewer
 
 %endif
+
+# llvm-config special casing. llvm-config is managed by update-alternatives.
+# the original file must remain available for compatibility with the CMake
+# infrastructure. Without compat, cmake points to the symlink, with compat it
+# points to the original file.
+
+%if %{without compat_build}
+
+mv %{buildroot}/%{pkg_bindir}/llvm-config %{buildroot}/%{pkg_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
+
+%else
+
+rm %{buildroot}%{_bindir}/llvm-config%{exec_suffix}
+(cd %{buildroot}/%{pkg_bindir} ; ln -s llvm-config llvm-config%{exec_suffix}-%{__isa_bits} )
+
+%endif
+
+# ghost presence
+touch %{buildroot}%{_bindir}/llvm-config%{exec_suffix}
+
 
 
 %check
@@ -544,6 +559,9 @@ fi
 %endif
 
 %changelog
+* Wed May 19 2021 sguelton@redhat.com - 11.1.0-5
+- Fix handling of llvm-config
+
 * Thu May 06 2021 sguelton@redhat.com - 11.1.0-4
 - Harmonize llvm-config handling with non-compat version
 
