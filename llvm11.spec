@@ -1,5 +1,11 @@
+%global devtoolset_name devtoolset-9
+
 # Components enabled if supported by target architecture:
+%if 0%{?rhel} && 0%{?rhel} < 8
+%define gold_arches %{ix86} x86_64 %{arm} aarch64
+%else
 %define gold_arches %{ix86} x86_64 %{arm} aarch64 %{power64} s390x
+%endif
 %ifarch %{gold_arches}
   %bcond_without gold
 %else
@@ -7,6 +13,7 @@
 %endif
 
 %bcond_without compat_build
+%bcond_with docs
 
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
@@ -62,15 +69,17 @@ Patch2:     0001-gcc11.patch
 Patch3:		0001-SystemZ-Assign-the-full-space-for-promoted-and-split.patch
 Patch4:		0001-MemCpyOpt-Correctly-merge-alias-scopes-during-call-s.patch
 
-BuildRequires:	gcc
-BuildRequires:	gcc-c++
-BuildRequires:	cmake
+BuildRequires:	%{devtoolset_name}-gcc
+BuildRequires:	%{devtoolset_name}-gcc-c++
+BuildRequires:	cmake3
 BuildRequires:	ninja-build
 BuildRequires:	zlib-devel
 BuildRequires:	libffi-devel
 BuildRequires:	ncurses-devel
+%if %{with docs}
 BuildRequires:	python3-sphinx
 BuildRequires:	python3-recommonmark
+%endif
 BuildRequires:	multilib-rpm-config
 %if %{with gold}
 BuildRequires:	binutils-devel
@@ -126,6 +135,7 @@ Provides:	llvm-devel(major) = %{maj_ver}
 This package contains library and header files needed to develop new native
 programs that use the LLVM infrastructure.
 
+%if %{with docs}
 %package doc
 Summary:	Documentation for LLVM
 BuildArch:	noarch
@@ -133,6 +143,7 @@ Requires:	%{name} = %{version}-%{release}
 
 %description doc
 Documentation for the LLVM compiler infrastructure.
+%endif
 
 %package libs
 Summary:	LLVM shared libraries
@@ -201,12 +212,16 @@ pathfix.py -i %{__python3} -pn \
 %global optflags %(echo %{optflags} | sed 's/-g /-g1 /')
 %endif
 
+%undefine __cmake3_in_source_build
+
 # force off shared libs as cmake macros turns it on.
-%cmake  -G Ninja \
+%cmake3 -G Ninja \
 	-DBUILD_SHARED_LIBS:BOOL=OFF \
 	-DLLVM_PARALLEL_LINK_JOBS=1 \
 	-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 	-DCMAKE_SKIP_RPATH:BOOL=ON \
+	-DCMAKE_C_COMPILER=/opt/rh/%{devtoolset_name}/root/usr/bin/gcc \
+	-DCMAKE_CXX_COMPILER=/opt/rh/%{devtoolset_name}/root/usr/bin/g++ \
 %ifarch s390 %{arm} %ix86
 	-DCMAKE_C_FLAGS_RELWITHDEBINFO="%{optflags} -DNDEBUG" \
 	-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="%{optflags} -DNDEBUG" \
@@ -249,10 +264,12 @@ pathfix.py -i %{__python3} -pn \
 	-DLLVM_TOOLS_INSTALL_DIR:PATH=bin \
 %endif
 	\
+%if %{with docs}
 	-DLLVM_INCLUDE_DOCS:BOOL=ON \
 	-DLLVM_BUILD_DOCS:BOOL=ON \
 	-DLLVM_ENABLE_SPHINX:BOOL=ON \
 	-DLLVM_ENABLE_DOXYGEN:BOOL=OFF \
+%endif
 	\
 %if %{without compat_build}
 	-DLLVM_VERSION_SUFFIX='' \
@@ -271,11 +288,11 @@ pathfix.py -i %{__python3} -pn \
 # Build libLLVM.so first.  This ensures that when libLLVM.so is linking, there
 # are no other compile jobs running.  This will help reduce OOM errors on the
 # builders without having to artificially limit the number of concurrent jobs.
-%cmake_build --target LLVM
-%cmake_build
+%cmake3_build --target LLVM
+%cmake3_build
 
 %install
-%cmake_install
+%cmake3_install
 
 
 %if %{without compat_build}
@@ -285,9 +302,11 @@ mv %{buildroot}/%{_bindir}/llvm-config %{buildroot}/%{_bindir}/llvm-config-%{__i
 # ghost presence
 touch %{buildroot}%{_bindir}/llvm-config
 
+%if %{with docs}
 # Fix some man pages
 ln -s llvm-config.1 %{buildroot}%{_mandir}/man1/llvm-config-%{__isa_bits}.1
 mv %{buildroot}%{_mandir}/man1/tblgen.1 %{buildroot}%{_mandir}/man1/llvm-tblgen.1
+%endif
 
 # Install binaries needed for lit tests
 %global test_binaries llvm-isel-fuzzer llvm-opt-fuzzer
@@ -399,12 +418,14 @@ cat >> %{buildroot}%{_sysconfdir}/ld.so.conf.d/%{name}-%{_arch}.conf << EOF
 %{pkg_libdir}
 EOF
 
+%if %{with docs}
 # Add version suffix to man pages and move them to mandir.
 mkdir -p %{buildroot}/%{_mandir}/man1
 for f in %{build_install_prefix}/share/man/man1/*; do
   filename=`basename $f | cut -f 1 -d '.'`
   mv $f %{buildroot}%{_mandir}/man1/$filename%{exec_suffix}.1
 done
+%endif
 
 # Remove opt-viewer, since this is just a compatibility package.
 rm -Rf %{build_install_prefix}/share/opt-viewer
@@ -417,6 +438,8 @@ rm -Rf %{build_install_prefix}/share/opt-viewer
 %ifarch %{arm}
 rm test/tools/llvm-readobj/ELF/dependent-libraries.test
 %endif
+
+rm test/ExecutionEngine/Interpreter/intrinsics.ll
 
 # non reproducible errors
 rm test/tools/dsymutil/X86/swift-interface.test
@@ -440,8 +463,10 @@ fi
 
 %files
 %license LICENSE.TXT
+%if %{with docs}
 %exclude %{_mandir}/man1/llvm-config*
 %{_mandir}/man1/*
+%endif
 %{_bindir}/*
 
 %if %{without compat_build}
@@ -485,7 +510,9 @@ fi
 %if %{without compat_build}
 %ghost %{_bindir}/llvm-config
 %{_bindir}/llvm-config-%{__isa_bits}
+%if %{with docs}
 %{_mandir}/man1/llvm-config*
+%endif
 %{_includedir}/llvm
 %{_includedir}/llvm-c
 %{_libdir}/libLLVM.so
@@ -493,7 +520,9 @@ fi
 %else
 %{_bindir}/llvm-config%{exec_suffix}-%{__isa_bits}
 %{pkg_bindir}/llvm-config
+%if %{with docs}
 %{_mandir}/man1/llvm-config%{exec_suffix}.1.gz
+%endif
 %{install_includedir}/llvm
 %{install_includedir}/llvm-c
 %{pkg_includedir}/llvm
@@ -503,9 +532,11 @@ fi
 %{pkg_libdir}/cmake/llvm
 %endif
 
+%if %{with docs}
 %files doc
 %license LICENSE.TXT
 %doc %{_pkgdocdir}/html
+%endif
 
 %files static
 %license LICENSE.TXT
