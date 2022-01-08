@@ -11,7 +11,7 @@
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
 #global rc_ver 2
-%global baserelease 6
+%global baserelease 7
 %global llvm_srcdir llvm-%{version}%{?rc_ver:rc%{rc_ver}}.src
 %global maj_ver 11
 %global min_ver 1
@@ -559,6 +559,9 @@ fi
 %endif
 
 %changelog
+* Sat Jan 08 2022 Miro Hrončok <mhroncok@redhat.com> - 11.1.0-7
+- Rebuilt for https://fedoraproject.org/wiki/Changes/LIBFFI34
+
 * Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 11.1.0-6
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
 
