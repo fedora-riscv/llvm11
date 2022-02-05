@@ -11,7 +11,7 @@
 %global llvm_libdir %{_libdir}/%{name}
 %global build_llvm_libdir %{buildroot}%{llvm_libdir}
 #global rc_ver 2
-%global baserelease 5
+%global baserelease 6
 %global llvm_srcdir llvm-%{version}%{?rc_ver:rc%{rc_ver}}.src
 %global maj_ver 11
 %global min_ver 1
@@ -64,6 +64,9 @@ Patch2:     0001-gcc11.patch
 Patch3:		0001-SystemZ-Assign-the-full-space-for-promoted-and-split.patch
 Patch4:		0001-MemCpyOpt-Correctly-merge-alias-scopes-during-call-s.patch
 
+# RHEL-specific patches
+Patch101:	0001-Deactivate-markdown-doc.patch
+
 BuildRequires:	gcc
 BuildRequires:	gcc-c++
 BuildRequires:	cmake
@@ -72,7 +75,9 @@ BuildRequires:	zlib-devel
 BuildRequires:	libffi-devel
 BuildRequires:	ncurses-devel
 BuildRequires:	python3-sphinx
+%if !0%{?rhel}
 BuildRequires:	python3-recommonmark
+%endif
 BuildRequires:	multilib-rpm-config
 %if %{with gold}
 BuildRequires:	binutils-devel
@@ -559,6 +564,9 @@ fi
 %endif
 
 %changelog
+* Sun Feb  6 2022 Jens Petersen <petersen@redhat.com> - 11.1.0-6
+- Remove dependency on python3-recommonmark (like RHEL9 llvm)
+
 * Wed May 19 2021 sguelton@redhat.com - 11.1.0-5
 - Fix handling of llvm-config
 
