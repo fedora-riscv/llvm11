@@ -572,6 +572,7 @@ fi
 %changelog
 * Sun Feb  6 2022 Jens Petersen <petersen@redhat.com> - 11.1.0-6
 - Remove dependency on python3-recommonmark (like RHEL9 llvm)
+- s390x: disable 2 llvm-objcopy/ELF/compress-debug-sections-zlib tests
 
 * Wed May 19 2021 sguelton@redhat.com - 11.1.0-5
 - Fix handling of llvm-config
