@@ -64,6 +64,7 @@ Patch2:		0001-gcc11.patch
 Patch3:		0001-SystemZ-Assign-the-full-space-for-promoted-and-split.patch
 Patch4:		0001-MemCpyOpt-Correctly-merge-alias-scopes-during-call-s.patch
 Patch5:		gcc12.patch
+Patch6:		typename.patch
 
 BuildRequires:	gcc
 BuildRequires:	gcc-c++
@@ -562,6 +563,7 @@ fi
 %changelog
 * Mon Jan 30 2023 Jerry James <loganjerry@gmail.com> - 11.1.0-10
 - Add gcc12 patch to add includes needed for GCC 12
+- Add typename patch to fix test failures
 
 * Thu Jan 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 11.1.0-10
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
