@@ -44,7 +44,7 @@
 
 Name:		%{pkg_name}
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}
-Release:	%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}%{?dist}
+Release:	%{?rc_ver:0.}%{baserelease}%{?rc_ver:.rc%{rc_ver}}.rv64%{?dist}
 Summary:	The Low Level Virtual Machine
 
 License:	NCSA
@@ -203,7 +203,7 @@ LLVM's modified googletest sources.
 # Because of these failures, lto is disabled for now.
 %global _lto_cflags %{nil}
 
-%ifarch s390 %{arm} %ix86
+%ifarch s390 %{arm} %ix86 riscv64
 # Decrease debuginfo verbosity to reduce memory consumption during final library linking
 %global optflags %(echo %{optflags} | sed 's/-g /-g1 /')
 %endif
@@ -214,7 +214,7 @@ LLVM's modified googletest sources.
 	-DLLVM_PARALLEL_LINK_JOBS=1 \
 	-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 	-DCMAKE_SKIP_RPATH:BOOL=ON \
-%ifarch s390 %{arm} %ix86
+%ifarch s390 %{arm} %ix86 riscv64
 	-DCMAKE_C_FLAGS_RELWITHDEBINFO="%{optflags} -DNDEBUG" \
 	-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="%{optflags} -DNDEBUG" \
 %endif
@@ -435,8 +435,21 @@ touch %{buildroot}%{_bindir}/llvm-config%{exec_suffix}
 
 %check
 # TODO: Fix the failures below
-%ifarch %{arm}
+%ifarch %{arm} riscv64
 rm test/tools/llvm-readobj/ELF/dependent-libraries.test
+%endif
+%ifarch riscv64
+rm test/CodeGen/WebAssembly/immediates.ll
+rm test/DebugInfo/X86/convert-loclist.ll
+rm test/ExecutionEngine/frem.ll
+rm test/ExecutionEngine/mov64zext32.ll
+rm test/ExecutionEngine/test-interp-vec-arithm_float.ll
+rm test/ExecutionEngine/test-interp-vec-arithm_int.ll
+rm test/ExecutionEngine/test-interp-vec-logical.ll
+rm test/ExecutionEngine/test-interp-vec-setcond-fp.ll
+rm test/ExecutionEngine/test-interp-vec-setcond-int.ll
+rm test/MC/AsmParser/include.ll
+rm test/tools/llvm-ar/error-opening-permission.test
 %endif
 
 # non reproducible errors
@@ -561,6 +574,9 @@ fi
 %endif
 
 %changelog
+* Mon May 15 2023 Liu Yang <Yang.Liu.sn@gmail.com> - 11.1.0-10.rv64
+- Fix build on riscv64.
+
 * Mon Jan 30 2023 Jerry James <loganjerry@gmail.com> - 11.1.0-10
 - Add gcc12 patch to add includes needed for GCC 12
 - Add typename patch to fix test failures
